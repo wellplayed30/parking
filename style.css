@@ -1,0 +1,42 @@
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+body { background: #f0f4f8; padding: 20px; min-height: 100vh; }
+
+#login-screen { max-width: 400px; margin: 80px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+#login-screen h1 { text-align: center; margin-bottom: 20px; }
+#login-screen input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+#login-screen button { width: 100%; padding: 12px; margin-top: 8px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+#login-screen button:hover { background: #1d4ed8; }
+#google-btn { background: #ea4335 !important; }
+#login-error { color: red; text-align: center; margin-top: 10px; }
+
+header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+header h1 { font-size: 1.5rem; }
+#user-role { background: #2563eb; color: white; padding: 4px 10px; border-radius: 6px; margin: 0 10px; font-size: 0.85rem; }
+#logout-btn { padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; }
+
+.legend { background: white; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap; }
+.dot { display: inline-block; width: 16px; height: 16px; border-radius: 50%; vertical-align: middle; margin-right: 6px; }
+.dot.free { background: #22c55e; }
+.dot.busy { background: #eab308; }
+.dot.expired { background: #ef4444; }
+
+#parking-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+.spot { background: white; border-radius: 12px; padding: 15px 10px; text-align: center; cursor: pointer; transition: transform 0.15s; border: 3px solid transparent; min-height: 100px; display: flex; flex-direction: column; justify-content: center; }
+.spot:hover { transform: scale(1.03); }
+.spot.free { background: #dcfce7; border-color: #22c55e; }
+.spot.busy { background: #fef9c3; border-color: #eab308; }
+.spot.expired { background: #fecaca; border-color: #ef4444; animation: blink 1.5s infinite; }
+@keyframes blink { 50% { opacity: 0.6; } }
+.spot-num { font-size: 1.5rem; font-weight: bold; }
+.spot-info { font-size: 0.8rem; margin-top: 4px; color: #555; word-break: break-word; }
+
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal-content { background: white; padding: 25px; border-radius: 12px; max-width: 400px; width: 90%; }
+.modal-content h2 { margin-bottom: 15px; }
+.modal-content label { display: block; margin-top: 10px; font-size: 0.9rem; color: #555; }
+.modal-content input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 6px; }
+.modal-buttons { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+.modal-buttons button { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; }
+#modal-save { background: #2563eb; color: white; }
+#modal-free { background: #22c55e; color: white; }
+#modal-cancel { background: #e5e7eb; }
