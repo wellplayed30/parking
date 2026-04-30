@@ -30,7 +30,6 @@ const LEFT_SPOTS = Array.from({length: 34}, (_, i) => i + 1);
 // Верхний ряд: 36-41
 const TOP_SPOTS = [36, 37, 38, 39, 40, 41];
 // Особые места (выделены розовым на схеме)
-const SPECIAL_SPOTS = [17, 25];
 
 // === СОСТОЯНИЕ ===
 let currentUser = null;
