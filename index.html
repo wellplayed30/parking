@@ -77,6 +77,40 @@
   </div>
 </div>
 
+<!-- Модальное окно (по умолчанию скрыто) -->
+<div id="spot-modal" class="modal hidden" aria-hidden="true">
+  <div class="modal-overlay" data-close="true"></div>
+  <div class="modal-content" role="dialog" aria-modal="true">
+    <button type="button" class="modal-close" data-close="true" aria-label="Закрыть">×</button>
+
+    <h2>Место №<span id="modal-spot-number">—</span></h2>
+
+    <div class="modal-row">
+      <label>Статус:</label>
+      <span id="modal-status">—</span>
+    </div>
+
+    <div class="modal-row">
+      <label for="modal-apart">№ апарта:</label>
+      <input type="text" id="modal-apart" placeholder="Например, 305">
+    </div>
+
+    <div class="modal-row">
+      <label for="modal-car">№ авто:</label>
+      <input type="text" id="modal-car" placeholder="А123ВС777">
+    </div>
+
+    <div class="modal-row">
+      <label for="modal-datetime">Дата и время брони:</label>
+      <input type="datetime-local" id="modal-datetime">
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" id="modal-save" class="btn-primary">Сохранить</button>
+      <button type="button" class="btn-secondary" data-close="true">Отмена</button>
+    </div>
+  </div>
+</div>
 <script type="module" src="app.js"></script>
 </body>
 </html>
