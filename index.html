@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Парковка гостиницы</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="login-screen">
+  <h1>🅿️ Парковка гостиницы</h1>
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Пароль">
+  <button id="login-btn">Войти</button>
+  <button id="google-btn">Войти через Google</button>
+  <p id="login-error"></p>
+</div>
+
+<div id="main-screen" style="display:none;">
+  <header>
+    <h1>🅿️ Парковка</h1>
+    <div>
+      <span id="user-info"></span>
+      <span id="user-role"></span>
+      <button id="logout-btn">Выйти</button>
+    </div>
+  </header>
+
+  <div class="legend">
+    <span class="dot free"></span> Свободно
+    <span class="dot busy"></span> Занято
+    <span class="dot expired"></span> Бронь истекла
+  </div>
+
+  <div id="parking-grid"></div>
+</div>
+
+<!-- Модалка редактирования -->
+<div id="modal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2>Место №<span id="modal-spot-num"></span></h2>
+    <label>Гость / номер машины:</label>
+    <input type="text" id="modal-guest" placeholder="Иванов / А123БВ">
+    <label>Освободится (дата и время):</label>
+    <input type="datetime-local" id="modal-until">
+    <div class="modal-buttons">
+      <button id="modal-save">💾 Сохранить</button>
+      <button id="modal-free">🟢 Освободить</button>
+      <button id="modal-cancel">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
