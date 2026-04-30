@@ -52,8 +52,8 @@ header h1 { font-size: 1.5rem; color: #1e293b; }
 .legend > span { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; }
 .dot { width: 16px; height: 16px; border-radius: 4px; display: inline-block; }
 .dot.free { background: #86efac; border: 1px solid #22c55e; }
-.dot.busy { background: #fcd34d; border: 1px solid #f59e0b; }
-.dot.expired { background: #f87171; border: 1px solid #dc2626; }
+.dot.busy { background: #f87171; border: 1px solid #dc2626; }
+.dot.expired { background: #fcd34d; border: 1px solid #f59e0b; }
 
 /* === КАРТА ПАРКОВКИ === */
 #parking-map {
