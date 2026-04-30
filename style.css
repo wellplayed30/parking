@@ -1,231 +1,73 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: 'Segoe UI', Tahoma, sans-serif;
-  background: #d6ecff;
-  min-height: 100vh;
-  padding: 20px;
-}
-
-/* === Экран входа === */
-#login-screen {
-  max-width: 400px;
-  margin: 80px auto;
-  background: #fff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  text-align: center;
-}
-
-#login-screen h1 { margin-bottom: 20px; color: #2c3e50; }
-
-#login-form { display: flex; flex-direction: column; }
-
-#login-screen input {
-  width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 15px;
-}
-
-#login-screen button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  border: none;
-  border-radius: 6px;
-  background: #3498db;
-  color: #fff;
-  font-size: 15px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-#login-screen button:hover { background: #2980b9; }
-
-#google-btn { background: #db4437 !important; }
-#google-btn:hover { background: #c33d2e !important; }
-
-#login-error { color: #e74c3c; margin-top: 12px; min-height: 20px; }
-
-/* === Основной экран === */
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #fff;
-  padding: 15px 20px;
-  border-radius: 10px;
-  margin-bottom: 15px;
-}
-
-.header-right { display: flex; align-items: center; gap: 12px; }
-
-#user-role {
-  background: #3498db;
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-}
-
-#logout-btn {
-  background: #e74c3c;
-  color: #fff;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-/* === Легенда === */
-.legend {
-  display: flex;
-  gap: 18px;
-  background: #fff;
-  padding: 12px 20px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.dot {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-
-.free     { background: #8BC34A; }
-.reserved { background: #2196F3; }
-.expired  { background: #FFC107; }
-.occupied { background: #E53935; }
-
-/* === Схема парковки === */
+/* === Контейнеры рядов === */
 .parking-wrapper {
-  position: relative;
   background: #fff;
-  border-radius: 10px;
   padding: 20px;
-  min-height: 700px;
+  border-radius: 10px;
+  overflow-x: auto;
 }
 
 .parking-top {
   display: flex;
+  flex-wrap: nowrap;
   gap: 2px;
-  margin-left: 200px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 .parking-left {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   gap: 2px;
-  width: 60px;
-  margin-left: 20px;
+  width: fit-content;
 }
 
+/* === Базовый стиль места === */
 .spot {
-  width: 60px;
-  height: 32px;
-  background: #8BC34A;
-  border: 1px solid #4a7c1f;
+  width: 42px;
+  height: 56px;
+  border: 1.5px solid #2c3e50;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 600;
   cursor: pointer;
-  color: #1a3d0a;
+  font-weight: bold;
+  font-size: 13px;
+  position: relative;
   transition: transform 0.15s, box-shadow 0.15s;
+  user-select: none;
 }
 
 .spot:hover {
   transform: scale(1.08);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
   z-index: 5;
 }
 
-.spot.reserved { background: #2196F3; color: #fff; border-color: #0d47a1; }
-.spot.expired  { background: #FFC107; color: #000; border-color: #b8860b; }
-.spot.occupied { background: #E53935; color: #fff; border-color: #8b0000; }
-
-/* === Модальное окно === */
-.modal-hidden { display: none; }
-
-#modal {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
+.spot-number {
+  font-size: 13px;
+  color: #1a1a1a;
 }
 
-.modal-content {
-  background: #fff;
-  padding: 25px;
-  border-radius: 10px;
-  width: 90%;
-  max-width: 420px;
-  position: relative;
+.spot-icon {
+  font-size: 16px;
+  line-height: 1;
+  margin-bottom: 2px;
 }
 
-.close {
-  position: absolute;
-  top: 10px; right: 15px;
-  font-size: 26px;
-  cursor: pointer;
-  color: #888;
-}
+/* === Цвета по ТИПУ места (когда статус = free) === */
+.spot-regular.status-free  { background: #2ecc71; } /* зелёный */
+.spot-electric.status-free { background: #9b59b6; color: #fff; } /* фиолетовый */
+.spot-disabled.status-free { background: #ffffff; }              /* белый */
 
-.close:hover { color: #000; }
+/* === Цвета по СТАТУСУ (перекрывают тип) === */
+.spot.status-reserved { background: #3498db; color: #fff; } /* синий — забронировано */
+.spot.status-expired  { background: #f1c40f; color: #000; } /* жёлтый — бронь истекла */
+.spot.status-occupied { background: #e74c3c; color: #fff; } /* красный — занято */
 
-#modal-title { margin-bottom: 12px; }
-
-#admin-controls { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
-
-#admin-controls label {
-  display: flex;
-  flex-direction: column;
-  font-size: 14px;
-  color: #555;
-  gap: 4px;
-}
-
-#admin-controls input,
-#admin-controls select {
-  padding: 9px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-#save-btn {
-  background: #27ae60;
-  color: #fff;
-  border: none;
-  padding: 11px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 15px;
-  margin-top: 5px;
-}
-
-#save-btn:hover { background: #219653; }
-
-#spot-info {
-  background: #f4f6f8;
-  padding: 10px;
-  border-radius: 6px;
-  margin-top: 10px;
-  font-size: 14px;
-  line-height: 1.6;
-}
+/* === Точки в легенде === */
+.dot.free      { background: #2ecc71; }
+.dot.reserved  { background: #3498db; }
+.dot.expired   { background: #f1c40f; }
+.dot.occupied  { background: #e74c3c; }
+.dot.electric  { background: #9b59b6; }
+.dot.disabled  { background: #fff; border: 1px solid #2c3e50; }
