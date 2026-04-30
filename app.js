@@ -1,191 +1,254 @@
-// === Конфигурация ===
-const ELECTRIC_SPOTS = [59, 65];
-const DISABLED_SPOTS = [60, 61, 62, 63, 71, 72, 73, 74, 75];
+// === ИМПОРТЫ FIREBASE ===
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, signInWithPopup,
+  GoogleAuthProvider, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  getFirestore, doc, setDoc, deleteDoc, onSnapshot,
+  collection, getDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-const STATUS_LABELS = {
-  free:     'Свободно',
-  reserved: 'Забронировано',
-  expired:  'Бронь истекла',
-  occupied: 'Занято'
+// === КОНФИГ FIREBASE — ВСТАВЬТЕ СВОЙ ===
+const firebaseConfig = {
+  apiKey: "AIzaSyClZAZqezdYTrR0k7aA-QWoJrL_6Ex04-I",
+  authDomain: "albahotel-38d36.firebaseapp.com",
+  projectId: "albahotel-38d36",
+  storageBucket: "albahotel-38d36.firebasestorage.app",
+  messagingSenderId: "98903143411",
+  appId: "1:98903143411:web:f085c67febb25ecf325886",
+  measurementId: "G-QM40D0T1H0"
 };
 
-const TYPE_LABELS = {
-  regular:  'Обычное',
-  electric: '⚡ Электрозарядка',
-  disabled: '♿ Для инвалидов'
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// === КОНФИГ ПАРКОВКИ ===
+// Левый вертикальный ряд: 1-34
+const LEFT_SPOTS = Array.from({length: 34}, (_, i) => i + 1);
+// Верхний ряд: 36-41
+const TOP_SPOTS = [36, 37, 38, 39, 40, 41];
+// Особые места (выделены розовым на схеме)
+const SPECIAL_SPOTS = [17, 25];
+
+// === СОСТОЯНИЕ ===
+let currentUser = null;
+let currentRole = "viewer"; // editor / viewer
+let parkingData = {}; // { "1": {guest: "...", until: "..."}, ... }
+let selectedSpot = null;
+
+// === ЭЛЕМЕНТЫ ===
+const loginScreen = document.getElementById("login-screen");
+const mainScreen = document.getElementById("main-screen");
+const loginError = document.getElementById("login-error");
+
+// === АВТОРИЗАЦИЯ ===
+document.getElementById("login-btn").onclick = async () => {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (e) {
+    loginError.textContent = "Ошибка: " + e.message;
+  }
 };
 
-// === Состояние ===
-let spots = loadSpots();
-let activeSpotNumber = null;
-
-// === Хранилище ===
-function loadSpots() {
-  const saved = localStorage.getItem('parking_spots');
-  if (saved) {
-    try { return JSON.parse(saved); } catch(e) {}
+document.getElementById("google-btn").onclick = async () => {
+  try {
+    await signInWithPopup(auth, new GoogleAuthProvider());
+  } catch (e) {
+    loginError.textContent = "Ошибка: " + e.message;
   }
-  return generateSpots();
-}
+};
 
-function saveSpots() {
-  localStorage.setItem('parking_spots', JSON.stringify(spots));
-}
+document.getElementById("logout-btn").onclick = () => signOut(auth);
 
-function generateSpots() {
-  const arr = [];
-  for (let i = 1; i <= 91; i++) {
-    let type = 'regular';
-    if (ELECTRIC_SPOTS.includes(i)) type = 'electric';
-    else if (DISABLED_SPOTS.includes(i)) type = 'disabled';
+// При смене состояния авторизации
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    // Проверяем роль в коллекции users
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    if (userDoc.exists()) {
+      currentRole = userDoc.data().role || "viewer";
+    } else {
+      // Первый вход — создаём как viewer
+      await setDoc(doc(db, "users", user.uid), {
+        email: user.email, role: "viewer"
+      });
+      currentRole = "viewer";
+    }
 
-    arr.push({
-      number: i,
-      type,
-      status: 'free',
-      apartNumber: '',
-      carNumber: '',
-      bookingDateTime: ''
-    });
+    loginScreen.style.display = "none";
+    mainScreen.style.display = "block";
+    document.getElementById("user-info").textContent = user.email;
+    const roleEl = document.getElementById("user-role");
+    roleEl.textContent = currentRole === "editor" ? "✏️ Редактор" : "👁 Просмотр";
+    roleEl.className = currentRole;
+
+    renderParking();
+    subscribeToParking();
+  } else {
+    currentUser = null;
+    loginScreen.style.display = "block";
+    mainScreen.style.display = "none";
   }
-  return arr;
-}
+});
 
-// === Отрисовка схемы ===
+// === ОТРИСОВКА ПАРКОВКИ ===
 function renderParking() {
-  const topRow  = document.getElementById('parking-top');
-  const leftRow = document.getElementById('parking-left');
+  // Верхний ряд (36-41)
+  const topEl = document.getElementById("top-spots");
+  topEl.innerHTML = "";
+  TOP_SPOTS.forEach(num => topEl.appendChild(createSpot(num)));
 
-  topRow.innerHTML  = '';
-  leftRow.innerHTML = '';
-
-  spots.forEach(spot => {
-    const cell = createSpotCell(spot);
-    if (spot.number <= 34) leftRow.appendChild(cell);
-    else                   topRow.appendChild(cell);
-  });
+  // Левый ряд (1-34) — flex-direction: column-reverse, поэтому добавляем по порядку
+  const leftEl = document.getElementById("left-spots");
+  leftEl.innerHTML = "";
+  LEFT_SPOTS.forEach(num => leftEl.appendChild(createSpot(num)));
 }
 
-function createSpotCell(spot) {
-  const div = document.createElement('div');
-  div.className = `spot spot-${spot.type} status-${spot.status}`;
-  div.dataset.number = spot.number;
-  if (spot.number === activeSpotNumber) div.classList.add('active');
-
-  let icon = '';
-  if (spot.type === 'electric') icon = '<span class="spot-icon">⚡</span>';
-  if (spot.type === 'disabled') icon = '<span class="spot-icon">♿</span>';
-
-  div.innerHTML = `${icon}<span class="spot-number">${spot.number}</span>`;
-  div.addEventListener('click', () => openSpotForm(spot.number));
+function createSpot(num) {
+  const div = document.createElement("div");
+  div.className = "spot";
+  div.dataset.num = num;
+  div.textContent = num;
+  if (SPECIAL_SPOTS.includes(num)) div.classList.add("special");
+  div.onclick = () => openModal(num);
   return div;
 }
 
-// === Раскрывающаяся форма ===
-function openSpotForm(number) {
-  activeSpotNumber = number;
-  const spot = spots.find(s => s.number === number);
-  const container = document.getElementById('spot-form-container');
+// === ОБНОВЛЕНИЕ СТАТУСОВ ===
+function updateSpotStatuses() {
+  document.querySelectorAll(".spot").forEach(el => {
+    const num = el.dataset.num;
+    const data = parkingData[num];
 
-  container.innerHTML = `
-    <div class="spot-form">
-      <h2>
-        Место №${spot.number}
-        <button class="close-btn" id="form-close">×</button>
-      </h2>
+    el.classList.remove("busy", "expired");
+    el.removeAttribute("data-guest");
 
-      <div class="info"><b>Тип:</b> ${TYPE_LABELS[spot.type]}</div>
-      <div class="info"><b>Текущий статус:</b> ${STATUS_LABELS[spot.status]}</div>
-
-      <label for="f-apart">№ апарта</label>
-      <input type="text" id="f-apart" placeholder="Например: 305" value="${spot.apartNumber}">
-
-      <label for="f-car">Гос. номер автомобиля</label>
-      <input type="text" id="f-car" placeholder="А123БВ77" value="${spot.carNumber}">
-
-      <label for="f-datetime">Дата и время брони</label>
-      <input type="datetime-local" id="f-datetime" value="${spot.bookingDateTime}">
-
-      <label for="f-status">Статус</label>
-      <select id="f-status">
-        <option value="free"     ${spot.status==='free'?'selected':''}>Свободно</option>
-        <option value="reserved" ${spot.status==='reserved'?'selected':''}>Забронировано</option>
-        <option value="expired"  ${spot.status==='expired'?'selected':''}>Бронь истекла</option>
-        <option value="occupied" ${spot.status==='occupied'?'selected':''}>Занято</option>
-      </select>
-
-      <div class="actions">
-        <button class="btn btn-save"   id="form-save">Сохранить</button>
-        <button class="btn btn-clear"  id="form-clear">Очистить</button>
-        <button class="btn btn-cancel" id="form-cancel">Отмена</button>
-      </div>
-    </div>
-  `;
-
-  document.getElementById('form-close').onclick  = closeSpotForm;
-  document.getElementById('form-cancel').onclick = closeSpotForm;
-  document.getElementById('form-save').onclick   = saveSpotForm;
-  document.getElementById('form-clear').onclick  = clearSpotForm;
-
-  renderParking(); // обновить подсветку active
-
-  // Прокрутка к форме
-  container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function closeSpotForm() {
-  activeSpotNumber = null;
-  document.getElementById('spot-form-container').innerHTML = '';
-  renderParking();
-}
-
-function saveSpotForm() {
-  const spot = spots.find(s => s.number === activeSpotNumber);
-  if (!spot) return;
-
-  spot.apartNumber     = document.getElementById('f-apart').value.trim();
-  spot.carNumber       = document.getElementById('f-car').value.trim().toUpperCase();
-  spot.bookingDateTime = document.getElementById('f-datetime').value;
-  spot.status          = document.getElementById('f-status').value;
-
-  saveSpots();
-  closeSpotForm();
-}
-
-function clearSpotForm() {
-  if (!confirm('Очистить данные места и сделать его свободным?')) return;
-  const spot = spots.find(s => s.number === activeSpotNumber);
-  if (!spot) return;
-
-  spot.apartNumber = '';
-  spot.carNumber = '';
-  spot.bookingDateTime = '';
-  spot.status = 'free';
-
-  saveSpots();
-  closeSpotForm();
-}
-
-// === Авто-проверка истёкших броней (раз в минуту) ===
-function checkExpiredBookings() {
-  const now = new Date();
-  let changed = false;
-  spots.forEach(s => {
-    if (s.status === 'reserved' && s.bookingDateTime) {
-      const dt = new Date(s.bookingDateTime);
-      if (dt < now) {
-        s.status = 'expired';
-        changed = true;
+    if (data && data.guest) {
+      const now = new Date();
+      const until = data.until ? new Date(data.until) : null;
+      
+      if (until && until < now) {
+        el.classList.add("expired");
+      } else {
+        el.classList.add("busy");
       }
+      
+      let label = data.guest;
+      if (until) {
+        label += ` (до ${until.toLocaleString("ru-RU", {day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"})})`;
+      }
+      el.dataset.guest = label;
     }
   });
-  if (changed) {
-    saveSpots();
-    renderParking();
-  }
 }
 
-// === Старт ===
-renderParking();
-checkExpiredBookings();
-setInterval(checkExpiredBookings, 60_000);
+// === ПОДПИСКА НА ИЗМЕНЕНИЯ ===
+function subscribeToParking() {
+  onSnapshot(collection(db, "parking"), (snap) => {
+    parkingData = {};
+    snap.forEach(d => parkingData[d.id] = d.data());
+    updateSpotStatuses();
+  });
+}
+
+// Каждую минуту перепроверяем "истёкшие" брони
+setInterval(updateSpotStatuses, 60 * 1000);
+
+// === МОДАЛЬНОЕ ОКНО ===
+const modal = document.getElementById("modal");
+const modalTitle = document.getElementById("modal-title");
+const guestInput = document.getElementById("guest-input");
+const untilInput = document.getElementById("until-input");
+const saveBtn = document.getElementById("save-btn");
+const clearBtn = document.getElementById("clear-btn");
+const closeBtn = document.getElementById("close-btn");
+
+function openModal(num) {
+  selectedSpot = num;
+  modalTitle.textContent = `Место №${num}`;
+
+  const data = parkingData[num] || {};
+  guestInput.value = data.guest || "";
+  // datetime-local требует формат YYYY-MM-DDTHH:mm
+  if (data.until) {
+    const d = new Date(data.until);
+    // приводим к локальному времени без секунд
+    const pad = n => String(n).padStart(2, "0");
+    untilInput.value =
+      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` +
+      `T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } else {
+    untilInput.value = "";
+  }
+
+  // Права доступа
+  const isEditor = currentRole === "editor";
+  guestInput.disabled = !isEditor;
+  untilInput.disabled = !isEditor;
+  saveBtn.style.display = isEditor ? "inline-block" : "none";
+  clearBtn.style.display = isEditor && data.guest ? "inline-block" : "none";
+
+  modal.style.display = "flex";
+}
+
+function closeModal() {
+  modal.style.display = "none";
+  selectedSpot = null;
+}
+
+closeBtn.onclick = closeModal;
+modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+
+// === СОХРАНЕНИЕ ===
+saveBtn.onclick = async () => {
+  if (!selectedSpot) return;
+  if (currentRole !== "editor") {
+    alert("У вас нет прав на редактирование");
+    return;
+  }
+
+  const guest = guestInput.value.trim();
+  if (!guest) {
+    alert("Введите имя гостя или номер комнаты");
+    return;
+  }
+
+  const untilVal = untilInput.value;
+  const payload = {
+    guest,
+    until: untilVal ? new Date(untilVal).toISOString() : null,
+    updatedAt: new Date().toISOString(),
+    updatedBy: currentUser.email
+  };
+
+  try {
+    await setDoc(doc(db, "parking", String(selectedSpot)), payload);
+    closeModal();
+  } catch (e) {
+    alert("Ошибка сохранения: " + e.message);
+  }
+};
+
+// === ОЧИСТКА ===
+clearBtn.onclick = async () => {
+  if (!selectedSpot) return;
+  if (currentRole !== "editor") return;
+  if (!confirm(`Освободить место №${selectedSpot}?`)) return;
+
+  try {
+    await deleteDoc(doc(db, "parking", String(selectedSpot)));
+    closeModal();
+  } catch (e) {
+    alert("Ошибка: " + e.message);
+  }
+};
+
+// Закрытие по Escape
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && modal.style.display === "flex") closeModal();
+});
