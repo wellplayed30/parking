@@ -1,170 +1,240 @@
-/* === Контейнеры рядов === */
-.parking-wrapper {
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-  overflow-x: auto;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.parking-top {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 2px;
-  margin-bottom: 20px;
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(135deg, #f3e7ff 0%, #fce4ec 100%);
+  min-height: 100vh;
+  color: #222;
 }
 
-.parking-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: fit-content;
-}
+.hidden { display: none !important; }
 
-/* === Базовый стиль места === */
-.spot {
-  width: 42px;
-  height: 56px;
-  border: 1.5px solid #2c3e50;
+/* ====== АВТОРИЗАЦИЯ ====== */
+.auth-screen {
+  min-height: 100vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 13px;
-  position: relative;
-  transition: transform 0.15s, box-shadow 0.15s;
-  user-select: none;
+  padding: 20px;
 }
 
-.spot:hover {
-  transform: scale(1.08);
-  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
-  z-index: 5;
+.auth-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+  text-align: center;
+}
+
+.auth-card h1 {
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  color: #777;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-form input {
+  padding: 11px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.auth-form input:focus { border-color: #667eea; }
+
+.btn-primary {
+  background: #2ecc71;
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: #27ae60; }
+
+.btn-google {
+  background: #fff;
+  color: #444;
+  border: 1px solid #ddd;
+  padding: 11px;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-google:hover { background: #f5f5f5; }
+
+.auth-error {
+  color: #e74c3c;
+  font-size: 13px;
+  margin-top: 12px;
+  min-height: 18px;
+}
+
+/* ====== ОСНОВНОЙ ЭКРАН ====== */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.topbar h1 { font-size: 20px; }
+
+.btn-logout {
+  background: #ecf0f1;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.btn-logout:hover { background: #dcdcdc; }
+
+.legend {
+  display: flex;
+  gap: 18px;
+  padding: 14px 24px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #555;
+}
+
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.dot.free   { background: #2ecc71; }
+.dot.busy   { background: #e74c3c; }
+.dot.booked { background: #f39c12; }
+
+/* ====== СЕТКА МЕСТ ====== */
+.parking-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  padding: 20px 24px 60px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.spot-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border-top: 5px solid #2ecc71;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.spot-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.spot-card.status-busy   { border-top-color: #e74c3c; }
+.spot-card.status-booked { border-top-color: #f39c12; }
+
+.spot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 .spot-number {
-  font-size: 13px;
-  color: #1a1a1a;
+  font-size: 18px;
+  font-weight: 700;
 }
 
-.spot-icon {
-  font-size: 16px;
-  line-height: 1;
-  margin-bottom: 2px;
-}
-
-/* === Цвета по ТИПУ места (когда статус = free) === */
-.spot-regular.status-free  { background: #2ecc71; } /* зелёный */
-.spot-electric.status-free { background: #9b59b6; color: #fff; } /* фиолетовый */
-.spot-disabled.status-free { background: #ffffff; }              /* белый */
-
-/* === Цвета по СТАТУСУ (перекрывают тип) === */
-.spot.status-reserved { background: #3498db; color: #fff; } /* синий — забронировано */
-.spot.status-expired  { background: #f1c40f; color: #000; } /* жёлтый — бронь истекла */
-.spot.status-occupied { background: #e74c3c; color: #fff; } /* красный — занято */
-
-/* === Точки в легенде === */
-.dot.free      { background: #2ecc71; }
-.dot.reserved  { background: #3498db; }
-.dot.expired   { background: #f1c40f; }
-.dot.occupied  { background: #e74c3c; }
-.dot.electric  { background: #9b59b6; }
-.dot.disabled  { background: #fff; border: 1px solid #2c3e50; }
-
-/* === Модалка скрыта по умолчанию === */
-.modal {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: none;             /* ← КЛЮЧЕВОЙ ФИКС */
-  align-items: center;
-  justify-content: center;
-}
-
-.modal.is-open {
-  display: flex;             /* показываем только при добавлении класса */
-}
-
-.hidden {
-  display: none !important;
-}
-
-.modal-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(2px);
-}
-
-.modal-content {
-  position: relative;
-  background: #fff;
+.spot-status {
+  font-size: 12px;
+  padding: 3px 10px;
   border-radius: 12px;
-  padding: 28px 32px;
-  width: 90%;
-  max-width: 440px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  animation: modalIn 0.2s ease-out;
-}
-
-@keyframes modalIn {
-  from { transform: translateY(-20px); opacity: 0; }
-  to   { transform: translateY(0);     opacity: 1; }
-}
-
-.modal-close {
-  position: absolute;
-  top: 10px;
-  right: 14px;
-  background: none;
-  border: none;
-  font-size: 28px;
-  line-height: 1;
-  cursor: pointer;
-  color: #888;
-  transition: color 0.15s;
-}
-.modal-close:hover { color: #000; }
-
-.modal-row {
-  margin: 14px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.modal-row label {
   font-weight: 600;
-  font-size: 14px;
-  color: #444;
+  color: #fff;
 }
+.spot-status.free   { background: #2ecc71; }
+.spot-status.busy   { background: #e74c3c; }
+.spot-status.booked { background: #f39c12; }
 
-.modal-row input {
-  padding: 8px 10px;
+.spot-info {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+}
+.spot-info b { color: #333; }
+
+/* раскрывающаяся форма редактирования */
+.spot-edit {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed #ddd;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+.spot-card.is-editing .spot-edit { display: flex; }
+
+.spot-edit label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+}
+.spot-edit input,
+.spot-edit select {
+  padding: 7px 9px;
   border: 1px solid #ccc;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
+  width: 100%;
 }
 
-.modal-actions {
+.edit-actions {
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
-  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
 }
-
-.btn-primary,
-.btn-secondary {
-  padding: 9px 18px;
-  border-radius: 6px;
+.edit-actions button {
+  flex: 1;
+  padding: 8px;
   border: none;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
+  font-size: 13px;
 }
-.btn-primary   { background: #2ecc71; color: #fff; }
-.btn-secondary { background: #ecf0f1; color: #333; }
-.btn-primary:hover   { background: #27ae60; }
-.btn-secondary:hover { background: #dcdcdc; }
-
-
+.btn-save   { background: #2ecc71; color: #fff; }
+.btn-cancel { background: #ecf0f1; color: #333; }
+.btn-save:hover   { background: #27ae60; }
+.btn-cancel:hover { background: #dcdcdc; }
