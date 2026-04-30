@@ -2,44 +2,33 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Парковка гостиницы</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- ===== ЭКРАН АВТОРИЗАЦИИ ===== -->
-  <section id="auth-screen" class="auth-screen">
-    <div class="auth-card">
-      <h1>🅿️ Парковка гостиницы</h1>
-      <p class="subtitle">Войдите, чтобы продолжить</p>
+  <header class="header">
+    <h1>🅿️ Парковка гостиницы</h1>
+  </header>
 
-      <form id="auth-form" class="auth-form">
-        <input type="email" id="auth-email" placeholder="Email" required>
-        <input type="password" id="auth-password" placeholder="Пароль" required>
-        <button type="submit" class="btn-primary">Войти</button>
-        <button type="button" id="google-login" class="btn-google">Войти через Google</button>
-      </form>
+  <!-- Легенда -->
+  <div class="legend">
+    <div><span class="dot free"></span> Свободно</div>
+    <div><span class="dot reserved"></span> Забронировано</div>
+    <div><span class="dot expired"></span> Бронь истекла</div>
+    <div><span class="dot occupied"></span> Занято</div>
+    <div><span class="dot electric"></span> ⚡ Электрозарядка</div>
+    <div><span class="dot disabled"></span> ♿ Для инвалидов</div>
+  </div>
 
-      <p id="auth-error" class="auth-error"></p>
-    </div>
-  </section>
+  <!-- Схема парковки -->
+  <div class="parking-wrapper">
+    <div id="parking-top" class="parking-top"></div>
+    <div id="parking-left" class="parking-left"></div>
+  </div>
 
-  <!-- ===== ОСНОВНОЙ ЭКРАН ===== -->
-  <section id="main-screen" class="main-screen hidden">
-    <header class="topbar">
-      <h1>🅿️ Парковка гостиницы</h1>
-      <button id="logout-btn" class="btn-logout">Выйти</button>
-    </header>
-
-    <div class="legend">
-      <span class="legend-item"><span class="dot free"></span>Свободно</span>
-      <span class="legend-item"><span class="dot busy"></span>Занято</span>
-      <span class="legend-item"><span class="dot booked"></span>Бронь</span>
-    </div>
-
-    <div id="parking-grid" class="parking-grid"></div>
-  </section>
+  <!-- Контейнер для раскрывающейся формы -->
+  <div id="spot-form-container"></div>
 
   <script src="app.js"></script>
 </body>
