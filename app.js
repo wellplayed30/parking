@@ -1,208 +1,227 @@
-// === ИМПОРТЫ FIREBASE ===
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import {
   getAuth, signInWithEmailAndPassword, signInWithPopup,
   GoogleAuthProvider, onAuthStateChanged, signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import {
-  getFirestore, doc, setDoc, deleteDoc, onSnapshot,
-  collection, getDoc
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  getFirestore, doc, setDoc, getDoc, onSnapshot, collection
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-// === КОНФИГ FIREBASE — ВСТАВЬТЕ СВОЙ ===
+// 🔧 ВАШ КОНФИГ FIREBASE
 const firebaseConfig = {
-  apiKey: "AIzaSyClZAZqezdYTrR0k7aA-QWoJrL_6Ex04-I",
-  authDomain: "albahotel-38d36.firebaseapp.com",
-  projectId: "albahotel-38d36",
-  storageBucket: "albahotel-38d36.firebasestorage.app",
-  messagingSenderId: "98903143411",
-  appId: "1:98903143411:web:f085c67febb25ecf325886",
-  measurementId: "G-QM40D0T1H0"
+  apiKey: "ВАШ_API_KEY",
+  authDomain: "ВАШ_PROJECT.firebaseapp.com",
+  projectId: "ВАШ_PROJECT_ID",
+  storageBucket: "ВАШ_PROJECT.appspot.com",
+  messagingSenderId: "...",
+  appId: "..."
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
 
-// === КОНФИГ ПАРКОВКИ ===
-// Левый вертикальный ряд: 1-34
-const LEFT_SPOTS = Array.from({length: 34}, (_, i) => i + 1);
-// Верхний ряд: 36-41
-const TOP_SPOTS = [36, 37, 38, 39, 40, 41];
-// Особые места (выделены розовым на схеме)
+// === DOM ===
+const loginScreen = document.getElementById('login-screen');
+const mainScreen  = document.getElementById('main-screen');
+const loginForm   = document.getElementById('login-form');
+const googleBtn   = document.getElementById('google-btn');
+const logoutBtn   = document.getElementById('logout-btn');
+const errorEl     = document.getElementById('login-error');
+const userInfo    = document.getElementById('user-info');
+const userRoleEl  = document.getElementById('user-role');
 
-// === СОСТОЯНИЕ ===
+const parkingTop  = document.getElementById('parking-top');
+const parkingLeft = document.getElementById('parking-left');
+
+const modal       = document.getElementById('modal');
+const closeModal  = document.getElementById('close-modal');
+const spotNumber  = document.getElementById('spot-number');
+const spotStatus  = document.getElementById('spot-status');
+const spotInfo    = document.getElementById('spot-info');
+const adminControls = document.getElementById('admin-controls');
+const apartInput  = document.getElementById('apart-number');
+const carInput    = document.getElementById('car-number');
+const dateInput   = document.getElementById('booking-datetime');
+const statusSel   = document.getElementById('status-select');
+const saveBtn     = document.getElementById('save-btn');
+
 let currentUser = null;
-let currentRole = "viewer"; // editor / viewer
-let parkingData = {}; // { "1": {guest: "...", until: "..."}, ... }
-let selectedSpot = null;
+let currentRole = 'viewer';
+let currentSpotId = null;
+let spotsData = {};
 
-// === ЭЛЕМЕНТЫ ===
-const loginScreen = document.getElementById("login-screen");
-const mainScreen = document.getElementById("main-screen");
-const loginError = document.getElementById("login-error");
+// === Список мест: левый ряд 1-34, верхний ряд 36-41 ===
+const LEFT_SPOTS = Array.from({length: 34}, (_, i) => i + 1);
+const TOP_SPOTS  = [36, 37, 38, 39, 40, 41];
 
-// === АВТОРИЗАЦИЯ ===
-document.getElementById("login-btn").onclick = async () => {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (e) {
-    loginError.textContent = "Ошибка: " + e.message;
-  }
-};
+// === Авторизация ===
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  errorEl.textContent = '';
 
-document.getElementById("google-btn").onclick = async () => {
-  try {
-    await signInWithPopup(auth, new GoogleAuthProvider());
-  } catch (e) {
-    loginError.textContent = "Ошибка: " + e.message;
-  }
-};
-
-document.getElementById("logout-btn").onclick = () => signOut(auth);
-
-// При смене состояния авторизации
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    currentUser = user;
-    // Проверяем роль в коллекции users
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    if (userDoc.exists()) {
-      currentRole = userDoc.data().role || "viewer";
-    } else {
-      // Первый вход — создаём как viewer
-      await setDoc(doc(db, "users", user.uid), {
-        email: user.email, role: "viewer"
-      });
-      currentRole = "viewer";
-    }
-
-    loginScreen.style.display = "none";
-    mainScreen.style.display = "block";
-    document.getElementById("user-info").textContent = user.email;
-    const roleEl = document.getElementById("user-role");
-    roleEl.textContent = currentRole === "editor" ? "✏️ Редактор" : "👁 Просмотр";
-    roleEl.className = currentRole;
-
-    renderParking();
-    subscribeToParking();
-  } else {
-    currentUser = null;
-    loginScreen.style.display = "block";
-    mainScreen.style.display = "none";
-  }
-});
-
-// === ОТРИСОВКА ПАРКОВКИ ===
-function renderParking() {
-  // Верхний ряд (36-41)
-  const topEl = document.getElementById("top-spots");
-  topEl.innerHTML = "";
-  TOP_SPOTS.forEach(num => topEl.appendChild(createSpot(num)));
-
-  // Левый ряд (1-34) — flex-direction: column-reverse, поэтому добавляем по порядку
-  const leftEl = document.getElementById("left-spots");
-  leftEl.innerHTML = "";
-  LEFT_SPOTS.forEach(num => leftEl.appendChild(createSpot(num)));
-}
-
-function createSpot(num) {
-  const div = document.createElement("div");
-  div.className = "spot";
-  div.dataset.num = num;
-  div.textContent = num;
-  if (SPECIAL_SPOTS.includes(num)) div.classList.add("special");
-  div.onclick = () => openModal(num);
-  return div;
-}
-
-// === ОБНОВЛЕНИЕ СТАТУСОВ ===
-function updateSpotStatuses() {
-  document.querySelectorAll(".spot").forEach(el => {
-    const num = el.dataset.num;
-    const data = parkingData[num];
-
-    el.classList.remove("busy", "expired");
-    el.removeAttribute("data-guest");
-
-    if (data && data.guest) {
-      const now = new Date();
-      const until = data.until ? new Date(data.until) : null;
-      
-      if (until && until < now) {
-        el.classList.add("expired");
-      } else {
-        el.classList.add("busy");
-      }
-      
-      let label = data.guest;
-      if (until) {
-        label += ` (до ${until.toLocaleString("ru-RU", {day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"})})`;
-      }
-      el.dataset.guest = label;
-    }
-  });
-}
-
-// === ПОДПИСКА НА ИЗМЕНЕНИЯ ===
-function subscribeToParking() {
-  onSnapshot(collection(db, "parking"), (snap) => {
-    parkingData = {};
-    snap.forEach(d => parkingData[d.id] = d.data());
-    updateSpotStatuses();
-  });
-}
-
-// Каждую минуту перепроверяем "истёкшие" брони
-setInterval(updateSpotStatuses, 60000);
-
-// === МОДАЛКА ===
-const modal = document.getElementById("modal");
-
-function openModal(num) {
-  if (currentRole !== "editor") {
-    // Просмотр — показать инфо
-    const data = parkingData[num];
-    if (data && data.guest) {
-      alert(`Место №${num}\nГость: ${data.guest}\n${data.until ? "Освободится: " + new Date(data.until).toLocaleString("ru-RU") : ""}`);
-    } else {
-      alert(`Место №${num} — свободно`);
-    }
+  if (!email || !password) {
+    errorEl.textContent = '⚠️ Заполните все поля';
     return;
   }
 
-  selectedSpot = num;
-  document.getElementById("modal-spot-num").textContent = num;
-  const data = parkingData[num] || {};
-  document.getElementById("modal-guest").value = data.guest || "";
-  document.getElementById("modal-until").value = data.until 
-    ? new Date(data.until).toISOString().slice(0,16) 
-    : "";
-  modal.style.display = "flex";
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (error) {
+    const messages = {
+      'auth/invalid-email': '❌ Неверный формат email',
+      'auth/user-not-found': '❌ Пользователь не найден',
+      'auth/wrong-password': '❌ Неверный пароль',
+      'auth/invalid-credential': '❌ Неверный email или пароль',
+      'auth/too-many-requests': '⏳ Слишком много попыток',
+      'auth/network-request-failed': '🌐 Нет подключения',
+      'auth/unauthorized-domain': '🚫 Домен не разрешён'
+    };
+    errorEl.textContent = messages[error.code] || `Ошибка: ${error.message}`;
+  }
+});
+
+googleBtn.addEventListener('click', async () => {
+  errorEl.textContent = '';
+  try {
+    await signInWithPopup(auth, googleProvider);
+  } catch (error) {
+    errorEl.textContent = `Ошибка: ${error.message}`;
+  }
+});
+
+logoutBtn.addEventListener('click', () => signOut(auth));
+
+// === Состояние авторизации ===
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    const roleDoc = await getDoc(doc(db, 'roles', user.email));
+    currentRole = roleDoc.exists() ? roleDoc.data().role : 'viewer';
+
+    userInfo.textContent = user.email;
+    userRoleEl.textContent = currentRole === 'admin' ? '👑 Админ' : '👁 Просмотр';
+    userRoleEl.style.background = currentRole === 'admin' ? '#27ae60' : '#7f8c8d';
+
+    loginScreen.style.display = 'none';
+    mainScreen.style.display = 'block';
+
+    renderParking();
+    subscribeToSpots();
+  } else {
+    currentUser = null;
+    loginScreen.style.display = 'block';
+    mainScreen.style.display = 'none';
+  }
+});
+
+// === Отрисовка парковки ===
+function renderParking() {
+  parkingTop.innerHTML = '';
+  parkingLeft.innerHTML = '';
+
+  TOP_SPOTS.forEach(num => parkingTop.appendChild(createSpot(num)));
+  LEFT_SPOTS.forEach(num => parkingLeft.appendChild(createSpot(num)));
 }
 
-document.getElementById("modal-cancel").onclick = () => modal.style.display = "none";
+function createSpot(num) {
+  const div = document.createElement('div');
+  div.className = 'spot';
+  div.dataset.id = num;
+  div.textContent = num;
+  div.addEventListener('click', () => openModal(num));
+  return div;
+}
 
-document.getElementById("modal-save").onclick = async () => {
-  const guest = document.getElementById("modal-guest").value.trim();
-  const until = document.getElementById("modal-until").value;
-  if (!guest) { alert("Укажите гостя"); return; }
-  
-  await setDoc(doc(db, "parking", String(selectedSpot)), {
-    guest,
-    until: until ? new Date(until).toISOString() : null,
-    updatedBy: currentUser.email,
-    updatedAt: new Date().toISOString()
+// === Подписка на изменения ===
+function subscribeToSpots() {
+  onSnapshot(collection(db, 'spots'), (snapshot) => {
+    snapshot.forEach(docSnap => {
+      spotsData[docSnap.id] = docSnap.data();
+    });
+    updateSpotsView();
   });
-  modal.style.display = "none";
-};
+}
 
-document.getElementById("modal-free").onclick = async () => {
-  await deleteDoc(doc(db, "parking", String(selectedSpot)));
-  modal.style.display = "none";
-};
+function updateSpotsView() {
+  document.querySelectorAll('.spot').forEach(el => {
+    const id = el.dataset.id;
+    const data = spotsData[id];
+    el.classList.remove('reserved', 'expired', 'occupied');
+    if (data && data.status && data.status !== 'free') {
+      el.classList.add(data.status);
+    }
+  });
+}
 
-// Закрытие по клику на фон
-modal.onclick = (e) => { if (e.target === modal) modal.style.display = "none"; };
+// === Модальное окно ===
+function openModal(id) {
+  currentSpotId = String(id);
+  const data = spotsData[currentSpotId] || { status: 'free' };
+
+  spotNumber.textContent = id;
+
+  const statusNames = {
+    free: '🟢 Свободно',
+    reserved: '🔵 Забронировано',
+    expired: '🟡 Бронь истекла',
+    occupied: '🔴 Занято'
+  };
+  spotStatus.textContent = statusNames[data.status] || '🟢 Свободно';
+
+  // Информация для всех пользователей
+  let info = '';
+  if (data.apart)    info += `🏢 № апарта: <b>${data.apart}</b><br>`;
+  if (data.car)      info += `🚗 Гос. номер: <b>${data.car}</b><br>`;
+  if (data.datetime) info += `📅 Дата/время брони: <b>${formatDate(data.datetime)}</b><br>`;
+  spotInfo.innerHTML = info || '<i>Нет данных</i>';
+
+  // Только админ может редактировать
+  if (currentRole === 'admin') {
+    adminControls.style.display = 'flex';
+    apartInput.value  = data.apart || '';
+    carInput.value    = data.car || '';
+    dateInput.value   = data.datetime || '';
+    statusSel.value   = data.status || 'free';
+  } else {
+    adminControls.style.display = 'none';
+  }
+
+  modal.classList.remove('modal-hidden');
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+closeModal.addEventListener('click', () => modal.classList.add('modal-hidden'));
+modal.addEventListener('click', e => {
+  if (e.target === modal) modal.classList.add('modal-hidden');
+});
+
+// === Сохранение ===
+saveBtn.addEventListener('click', async () => {
+  if (currentRole !== 'admin') return;
+
+  const data = {
+    apart: apartInput.value.trim(),
+    car: carInput.value.trim().toUpperCase(),
+    datetime: dateInput.value,
+    status: statusSel.value,
+    updatedAt: new Date().toISOString(),
+    updatedBy: currentUser.email
+  };
+
+  try {
+    await setDoc(doc(db, 'spots', currentSpotId), data);
+    modal.classList.add('modal-hidden');
+  } catch (error) {
+    alert('Ошибка сохранения: ' + error.message);
+  }
+});
