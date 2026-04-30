@@ -54,7 +54,6 @@ header h1 { font-size: 1.5rem; color: #1e293b; }
 .dot.free { background: #86efac; border: 1px solid #22c55e; }
 .dot.busy { background: #fcd34d; border: 1px solid #f59e0b; }
 .dot.expired { background: #f87171; border: 1px solid #dc2626; }
-.dot.special { background: #ec4899; border: 1px solid #be185d; }
 
 /* === КАРТА ПАРКОВКИ === */
 #parking-map {
@@ -89,24 +88,6 @@ header h1 { font-size: 1.5rem; color: #1e293b; }
   border-radius: 4px;
 }
 
-/* Проезд */
-.driveway {
-  width: 100%;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 2px;
-  background: repeating-linear-gradient(
-    90deg, transparent, transparent 15px,
-    #94a3b8 15px, #94a3b8 25px
-  );
-  border-radius: 4px;
-  margin: 5px 0;
-}
 
 /* Левый вертикальный ряд */
 .left-row {
@@ -148,7 +129,6 @@ header h1 { font-size: 1.5rem; color: #1e293b; }
 /* Состояния */
 .spot.busy { background: #fcd34d; border-color: #f59e0b; color: #78350f; }
 .spot.expired { background: #f87171; border-color: #dc2626; color: white; animation: pulse 1.5s infinite; }
-.spot.special { background: #ec4899; border-color: #be185d; color: white; }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
