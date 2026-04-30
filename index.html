@@ -8,6 +8,7 @@
 </head>
 <body>
 
+<!-- Экран входа -->
 <div id="login-screen">
   <h1>🅿️ Парковка гостиницы</h1>
   <input type="email" id="email" placeholder="Email">
@@ -17,10 +18,11 @@
   <p id="login-error"></p>
 </div>
 
+<!-- Основной экран -->
 <div id="main-screen" style="display:none;">
   <header>
     <h1>🅿️ Парковка</h1>
-    <div>
+    <div class="header-right">
       <span id="user-info"></span>
       <span id="user-role"></span>
       <button id="logout-btn">Выйти</button>
@@ -28,26 +30,45 @@
   </header>
 
   <div class="legend">
-    <span class="dot free"></span> Свободно
-    <span class="dot busy"></span> Занято
-    <span class="dot expired"></span> Бронь истекла
+    <span><span class="dot free"></span> Свободно</span>
+    <span><span class="dot busy"></span> Занято</span>
+    <span><span class="dot expired"></span> Бронь истекла</span>
+    <span><span class="dot special"></span> Спец. место</span>
   </div>
 
-  <div id="parking-grid"></div>
+  <!-- Схема парковки -->
+  <div id="parking-map">
+    <!-- Верхний горизонтальный ряд (36-41) -->
+    <div class="top-row">
+      <div class="row-label">Верхний ряд</div>
+      <div class="spots-horizontal" id="top-spots"></div>
+    </div>
+
+    <!-- Проезд -->
+    <div class="driveway">
+      <span>↑ ПРОЕЗД ↑</span>
+    </div>
+
+    <!-- Левый вертикальный ряд (1-34) -->
+    <div class="left-row">
+      <div class="row-label-vertical">Левый ряд</div>
+      <div class="spots-vertical" id="left-spots"></div>
+    </div>
+  </div>
 </div>
 
-<!-- Модалка редактирования -->
+<!-- Модальное окно редактирования -->
 <div id="modal" class="modal" style="display:none;">
   <div class="modal-content">
     <h2>Место №<span id="modal-spot-num"></span></h2>
     <label>Гость / номер машины:</label>
-    <input type="text" id="modal-guest" placeholder="Иванов / А123БВ">
+    <input type="text" id="modal-guest" placeholder="Иванов / А123БВ77">
     <label>Освободится (дата и время):</label>
     <input type="datetime-local" id="modal-until">
     <div class="modal-buttons">
-      <button id="modal-save">💾 Сохранить</button>
-      <button id="modal-free">🟢 Освободить</button>
-      <button id="modal-cancel">Отмена</button>
+      <button id="modal-save" class="btn-primary">💾 Сохранить</button>
+      <button id="modal-free" class="btn-success">🟢 Освободить</button>
+      <button id="modal-cancel" class="btn-secondary">Отмена</button>
     </div>
   </div>
 </div>
