@@ -95,6 +95,47 @@ onAuthStateChanged(auth, async (user) => {
     loginScreen.style.display = "block";
     mainScreen.style.display = "none";
   }
+  function adjustLabelsHeight() {
+  const labels = document.querySelectorAll('.left-labels-column .vertical-label');
+  const spotGroups = document.querySelectorAll('.spots-vertical .spot');
+  
+  if (labels.length === 4 && spotGroups.length === 34) {
+    // Высота блока 28-34 (7 мест)
+    const block1Height = 0;
+    for (let i = 27; i < 34; i++) { // места 28-34 в индексах 27-33
+      const spotHeight = spotGroups[i]?.offsetHeight || 32;
+      block1Height += spotHeight + 2; // +2px за gap
+    }
+    if (block1Height) labels[0].style.height = (block1Height - 2) + 'px';
+    
+    // Высота блока 19-27 (9 мест)
+    let block2Height = 0;
+    for (let i = 18; i < 27; i++) {
+      const spotHeight = spotGroups[i]?.offsetHeight || 32;
+      block2Height += spotHeight + 2;
+    }
+    if (block2Height) labels[1].style.height = (block2Height - 2) + 'px';
+    
+    // Высота блока 10-18 (9 мест)
+    let block3Height = 0;
+    for (let i = 9; i < 18; i++) {
+      const spotHeight = spotGroups[i]?.offsetHeight || 32;
+      block3Height += spotHeight + 2;
+    }
+    if (block3Height) labels[2].style.height = (block3Height - 2) + 'px';
+    
+    // Высота блока 1-9 (9 мест)
+    let block4Height = 0;
+    for (let i = 0; i < 9; i++) {
+      const spotHeight = spotGroups[i]?.offsetHeight || 32;
+      block4Height += spotHeight + 2;
+    }
+    if (block4Height) labels[3].style.height = (block4Height - 2) + 'px';
+  }
+}
+
+// Вызвать после рендера
+setTimeout(adjustLabelsHeight, 100);
 });
 
 // === ОТРИСОВКА ===
