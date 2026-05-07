@@ -401,9 +401,9 @@ header h1 {
 }
 
 .spot.management {
-  background: #fed7aa;
-  border-color: #f97316;
-  color: #7c2d12;
+  background: #bfdbfe;
+  border-color: #3b82f6;
+  color: #1e3a8a;
 }
 
 /* === СОСТОЯНИЯ ЗАНЯТОСТИ === */
@@ -421,15 +421,15 @@ header h1 {
 }
 
 .spot.management-busy {
-  background: #fb923c !important;
-  border-color: #ea580c !important;
+  background: #f87171 !important;
+  border-color: #dc2626 !important;
   color: white !important;
 }
 
 .spot.management-expired {
-  background: #fdba74 !important;
-  border-color: #c2410c !important;
-  color: #431407 !important;
+  background: #fcd34d !important;
+  border-color: #f59e0b !important;
+  color: #78350f !important;
   animation: pulse 1.5s infinite;
 }
 
