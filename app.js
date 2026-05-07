@@ -32,7 +32,7 @@ const DISABLED_SPOTS = [61, 62, 63, 71, 72, 73, 74, 75];
 const TOP_GROUPS = [
   { start: 36, end: 41, label: "Парковка гостиничного оператора" },
   { start: 42, end: 60, label: "Парковка собственников апартаментов" },
-  { start: 61, end: 63, label: "♿ Места для инвалидов (ГО)" },
+  { start: 61, end: 63, label: "♿(ГО)" },
   { start: 64, end: 70, label: "Парковка собственников апартаментов" },
   { start: 71, end: 71, label: "♿ Инвалидное (ГО)" },
   { start: 72, end: 82, label: "Парковка собственников апартаментов" },
@@ -137,8 +137,9 @@ function renderLeftColumn() {
   const allSpotsContainer = document.createElement("div");
   allSpotsContainer.className = "spots-vertical";
   
-  // Добавляем места от 34 до 1 (34 сверху, 1 снизу)
-  for (let num = 34; num >= 1; num--) {
+  // ВАЖНО: добавляем места от 1 до 34 (1 будет первым в DOM, но CSS развернёт)
+  // Благодаря flex-direction: column-reverse, место 1 окажется внизу, 34 наверху
+  for (let num = 1; num <= 34; num++) {
     allSpotsContainer.appendChild(createSpot(num));
   }
   
