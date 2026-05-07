@@ -189,6 +189,57 @@ header h1 { font-size: 1.5rem; color: #1e293b; }
   border-radius: 4px;
   width: 90px;
 }
+/* ... все существующие стили ... */
+
+/* Левый ряд: одна колонка с 4 подписями */
+.left-column-container {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.left-labels-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.left-labels-column .vertical-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  padding: 12px 8px;
+  border-radius: 12px;
+  color: #1e293b;
+  text-align: center;
+  letter-spacing: 1px;
+  /* Высота подписи соответствует высоте блока мест */
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.left-spots-column {
+  flex: 1;
+}
+
+.spots-vertical {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  border: 2px solid #475569;
+  padding: 3px;
+  background: white;
+  border-radius: 4px;
+  width: 90px;
+}
+
+/* ... остальные стили ... */
 
 /* === МЕСТО === */
 .spot {

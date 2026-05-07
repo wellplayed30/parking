@@ -28,12 +28,12 @@ const db = getFirestore(app);
 const ELECTRIC_SPOTS = [59, 65];
 const DISABLED_SPOTS = [61, 62, 63, 71, 72, 73, 74, 75];
 
-// Группы для левого ряда (1-34) - по 9 мест, кроме последней
+// Группы для левого ряда (1-34) для отображения
 const LEFT_GROUPS = [
-  { start: 1, end: 9, label: "Парковка гостиничного оператора" },
-  { start: 10, end: 18, label: "Парковка гостиничного оператора" },
-  { start: 19, end: 27, label: "Парковка гостиничного оператора" },
-  { start: 28, end: 34, label: "Парковка гостиничного оператора" }
+  { start: 1, end: 9 },
+  { start: 10, end: 18 },
+  { start: 19, end: 27 },
+  { start: 28, end: 34 }
 ];
 
 // Группы для верхнего ряда
@@ -108,7 +108,7 @@ onAuthStateChanged(auth, async (user) => {
 // === ОТРИСОВКА ===
 function renderParking() {
   renderTopRow();
-  renderLeftBlocks();
+  renderLeftColumn();
 }
 
 function renderTopRow() {
@@ -135,31 +135,20 @@ function renderTopRow() {
   });
 }
 
-function renderLeftBlocks() {
-  const container = document.getElementById("left-blocks-container");
-  container.innerHTML = "";
-
-  LEFT_GROUPS.forEach((group) => {
-    const blockDiv = document.createElement("div");
-    blockDiv.className = "left-block";
-
-    // Вертикальная подпись
-    const labelDiv = document.createElement("div");
-    labelDiv.className = "vertical-label";
-    labelDiv.textContent = group.label;
-    blockDiv.appendChild(labelDiv);
-
-    // Контейнер с местами
-    const spotsContainer = document.createElement("div");
-    spotsContainer.className = "spots-vertical";
-    // Места в обратном порядке (сверху вниз: место с end сверху)
-    for (let num = group.end; num >= group.start; num--) {
-      spotsContainer.appendChild(createSpot(num));
-    }
-    blockDiv.appendChild(spotsContainer);
-
-    container.appendChild(blockDiv);
-  });
+function renderLeftColumn() {
+  const spotsColumn = document.getElementById("left-spots-column");
+  spotsColumn.innerHTML = "";
+  
+  // Создаём общий контейнер для всех мест (один столбец)
+  const allSpotsContainer = document.createElement("div");
+  allSpotsContainer.className = "spots-vertical";
+  
+  // Добавляем места в обратном порядке (1 снизу, 34 сверху)
+  for (let num = 34; num >= 1; num--) {
+    allSpotsContainer.appendChild(createSpot(num));
+  }
+  
+  spotsColumn.appendChild(allSpotsContainer);
 }
 
 function createSpot(num) {
