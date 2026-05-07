@@ -25,22 +25,28 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // === КОНФИГ ПАРКОВКИ ===
-// Левый вертикальный ряд: 1–34 (нумерация снизу вверх)
 const LEFT_SPOTS = Array.from({length: 34}, (_, i) => i + 1);
-// Верхний горизонтальный ряд: 36–91
-const TOP_SPOTS  = Array.from({length: 56}, (_, i) => i + 36);
-// Электрозарядки (фиолетовые)
 const ELECTRIC_SPOTS = [59, 65];
-// Места для инвалидов (белые с ♿)
-const DISABLED_SPOTS = [60, 61, 62, 63, 71, 72, 73, 74, 75];
+// Инвалидные места: 61,62,63,71,72,73,74,75
+const DISABLED_SPOTS = [61, 62, 63, 71, 72, 73, 74, 75];
 
-// === СОСТОЯНИЕ ===
+// Группы для верхнего ряда:
+// 36-41, 42-60, 61-63, 64-70, 71, 72-82, 83-91
+const TOP_GROUPS = [
+  { start: 36, end: 41, label: "Парковка гостиничного оператора" },
+  { start: 42, end: 60, label: "Парковка собственников апартаментов" },
+  { start: 61, end: 63, label: "♿ Места для инвалидов (ГО)" },
+  { start: 64, end: 70, label: "Парковка собственников апартаментов" },
+  { start: 71, end: 71, label: "♿ Инвалидное (ГО)" },
+  { start: 72, end: 82, label: "Парковка собственников апартаментов" },
+  { start: 83, end: 91, label: "🏢 Парковка управляющей компании" }
+];
+
 let currentUser = null;
-let currentRole = "viewer"; // editor / viewer
-let parkingData = {};       // { "1": {apart, plate, until, ...}, ... }
+let currentRole = "viewer";
+let parkingData = {};
 let selectedSpot = null;
 
-// === ЭЛЕМЕНТЫ ===
 const loginScreen = document.getElementById("login-screen");
 const mainScreen  = document.getElementById("main-screen");
 const loginError  = document.getElementById("login-error");
@@ -67,28 +73,20 @@ document.getElementById("google-btn").onclick = async () => {
 
 document.getElementById("logout-btn").onclick = () => signOut(auth);
 
-// При смене состояния авторизации
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUser = user;
-
-    // Проверяем роль в коллекции users
     const userDoc = await getDoc(doc(db, "users", user.uid));
     if (userDoc.exists()) {
       currentRole = userDoc.data().role || "viewer";
     } else {
-      // Первый вход — создаём как viewer
-      await setDoc(doc(db, "users", user.uid), {
-        email: user.email,
-        role: "viewer"
-      });
+      await setDoc(doc(db, "users", user.uid), { email: user.email, role: "viewer" });
       currentRole = "viewer";
     }
 
     loginScreen.style.display = "none";
     mainScreen.style.display = "block";
     document.getElementById("user-info").textContent = user.email;
-
     const roleEl = document.getElementById("user-role");
     roleEl.textContent = currentRole === "editor" ? "✏️ Редактор" : "👁 Просмотр";
     roleEl.className = currentRole;
@@ -102,14 +100,37 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// === ОТРИСОВКА ПАРКОВКИ ===
+// === ОТРИСОВКА ===
 function renderParking() {
-  // Верхний ряд (36–91)
-  const topEl = document.getElementById("top-spots");
-  topEl.innerHTML = "";
-  TOP_SPOTS.forEach(num => topEl.appendChild(createSpot(num)));
+  renderTopRow();
+  renderLeftColumn();
+}
 
-  // Левый ряд (1–34) — column-reverse в CSS, поэтому добавляем по порядку
+function renderTopRow() {
+  const container = document.getElementById("top-row-container");
+  container.innerHTML = "";
+
+  TOP_GROUPS.forEach((group, index) => {
+    const groupDiv = document.createElement("div");
+    groupDiv.className = "top-group";
+
+    const labelDiv = document.createElement("div");
+    labelDiv.className = "top-group-label";
+    labelDiv.textContent = group.label;
+    groupDiv.appendChild(labelDiv);
+
+    const spotsContainer = document.createElement("div");
+    spotsContainer.className = "top-group-spots";
+    for (let num = group.start; num <= group.end; num++) {
+      spotsContainer.appendChild(createSpot(num));
+    }
+    groupDiv.appendChild(spotsContainer);
+
+    container.appendChild(groupDiv);
+  });
+}
+
+function renderLeftColumn() {
   const leftEl = document.getElementById("left-spots");
   leftEl.innerHTML = "";
   LEFT_SPOTS.forEach(num => leftEl.appendChild(createSpot(num)));
@@ -120,16 +141,19 @@ function createSpot(num) {
   div.className = "spot";
   div.dataset.num = num;
 
-  let icon = "";
   if (ELECTRIC_SPOTS.includes(num)) {
     div.classList.add("electric");
-    icon = '<span class="spot-icon">⚡</span>';
+    div.innerHTML = `<span class="spot-icon">⚡</span><span class="spot-num">${num}</span>`;
   } else if (DISABLED_SPOTS.includes(num)) {
     div.classList.add("disabled");
-    icon = '<span class="spot-icon">♿</span>';
+    div.innerHTML = `<span class="spot-icon">♿</span><span class="spot-num">${num}</span>`;
+  } else if (num >= 83 && num <= 91) {
+    // Специальный стиль для мест управляющей компании
+    div.classList.add("management");
+    div.innerHTML = `<span class="spot-num">${num}</span>`;
+  } else {
+    div.innerHTML = `<span class="spot-num">${num}</span>`;
   }
-
-  div.innerHTML = `${icon}<span class="spot-num">${num}</span>`;
   div.onclick = () => openModal(num);
   return div;
 }
@@ -140,17 +164,30 @@ function updateSpotStatuses() {
     const num = el.dataset.num;
     const data = parkingData[num];
 
-    el.classList.remove("busy", "expired");
+    el.classList.remove("busy", "expired", "management-busy", "management-expired");
     el.removeAttribute("data-guest");
 
+    // Для мест управляющей компании используем отдельные классы занятости
+    const isManagement = (num >= 83 && num <= 91);
+    
     if (data && (data.apart || data.plate)) {
       const now = new Date();
       const until = data.until ? new Date(data.until) : null;
-
-      if (until && until < now) {
-        el.classList.add("expired");
+      
+      let isExpired = (until && until < now);
+      
+      if (isManagement) {
+        if (isExpired) {
+          el.classList.add("management-expired");
+        } else {
+          el.classList.add("management-busy");
+        }
       } else {
-        el.classList.add("busy");
+        if (isExpired) {
+          el.classList.add("expired");
+        } else {
+          el.classList.add("busy");
+        }
       }
 
       const parts = [];
@@ -168,7 +205,6 @@ function updateSpotStatuses() {
   });
 }
 
-// === ПОДПИСКА НА ИЗМЕНЕНИЯ ===
 function subscribeToParking() {
   onSnapshot(collection(db, "parking"), (snap) => {
     parkingData = {};
@@ -177,21 +213,21 @@ function subscribeToParking() {
   });
 }
 
-// Каждую минуту перепроверяем "истёкшие" брони
 setInterval(updateSpotStatuses, 60 * 1000);
 
 // === МОДАЛКА ===
 function openModal(num) {
   selectedSpot = num;
   document.getElementById("modal-title").textContent = `Место №${num}`;
-
-  // Информация о типе места
   const typeInfo = document.getElementById("modal-spot-type");
   if (ELECTRIC_SPOTS.includes(Number(num))) {
     typeInfo.textContent = "⚡ Место для электрозарядки";
     typeInfo.classList.add("visible");
   } else if (DISABLED_SPOTS.includes(Number(num))) {
     typeInfo.textContent = "♿ Место для инвалидов";
+    typeInfo.classList.add("visible");
+  } else if (num >= 83 && num <= 91) {
+    typeInfo.textContent = "🏢 Место управляющей компании";
     typeInfo.classList.add("visible");
   } else {
     typeInfo.textContent = "";
@@ -201,26 +237,21 @@ function openModal(num) {
   const data = parkingData[num] || {};
   document.getElementById("apart-input").value = data.apart || "";
   document.getElementById("plate-input").value = data.plate || "";
-
-  // datetime-local требует формат YYYY-MM-DDTHH:mm
   if (data.until) {
     const d = new Date(data.until);
     const pad = n => String(n).padStart(2, "0");
     document.getElementById("until-input").value =
-      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` +
-      `T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   } else {
     document.getElementById("until-input").value = "";
   }
 
-  // Права доступа
   const isEditor = currentRole === "editor";
   document.getElementById("apart-input").disabled = !isEditor;
   document.getElementById("plate-input").disabled = !isEditor;
   document.getElementById("until-input").disabled = !isEditor;
-  document.getElementById("save-btn").style.display  = isEditor ? "inline-block" : "none";
-  document.getElementById("clear-btn").style.display =
-    isEditor && (data.apart || data.plate) ? "inline-block" : "none";
+  document.getElementById("save-btn").style.display = isEditor ? "inline-block" : "none";
+  document.getElementById("clear-btn").style.display = isEditor && (data.apart || data.plate) ? "inline-block" : "none";
 
   modal.style.display = "flex";
 }
@@ -240,20 +271,16 @@ document.getElementById("save-btn").onclick = async () => {
     alert("У вас нет прав на редактирование");
     return;
   }
-
   const apart = document.getElementById("apart-input").value.trim();
   const plate = document.getElementById("plate-input").value.trim();
   const untilVal = document.getElementById("until-input").value;
-
   if (!apart && !plate) {
     alert("Укажите № апарта или гос. номер");
     return;
   }
-
   try {
     await setDoc(doc(db, "parking", String(selectedSpot)), {
-      apart,
-      plate,
+      apart, plate,
       until: untilVal ? new Date(untilVal).toISOString() : null,
       updatedAt: new Date().toISOString(),
       updatedBy: currentUser.email
@@ -269,7 +296,6 @@ document.getElementById("clear-btn").onclick = async () => {
   if (!selectedSpot) return;
   if (currentRole !== "editor") return;
   if (!confirm(`Освободить место №${selectedSpot}?`)) return;
-
   try {
     await deleteDoc(doc(db, "parking", String(selectedSpot)));
     closeModal();
@@ -278,7 +304,6 @@ document.getElementById("clear-btn").onclick = async () => {
   }
 };
 
-// Закрытие по Escape
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && modal.style.display === "flex") closeModal();
 });
