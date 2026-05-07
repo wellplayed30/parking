@@ -28,14 +28,6 @@ const db = getFirestore(app);
 const ELECTRIC_SPOTS = [59, 65];
 const DISABLED_SPOTS = [61, 62, 63, 71, 72, 73, 74, 75];
 
-// Группы для левого ряда (1-34) для отображения
-const LEFT_GROUPS = [
-  { start: 1, end: 9 },
-  { start: 10, end: 18 },
-  { start: 19, end: 27 },
-  { start: 28, end: 34 }
-];
-
 // Группы для верхнего ряда
 const TOP_GROUPS = [
   { start: 36, end: 41, label: "Парковка гостиничного оператора" },
@@ -113,6 +105,7 @@ function renderParking() {
 
 function renderTopRow() {
   const container = document.getElementById("top-row-container");
+  if (!container) return;
   container.innerHTML = "";
 
   TOP_GROUPS.forEach((group) => {
@@ -137,13 +130,14 @@ function renderTopRow() {
 
 function renderLeftColumn() {
   const spotsColumn = document.getElementById("left-spots-column");
+  if (!spotsColumn) return;
   spotsColumn.innerHTML = "";
   
-  // Создаём общий контейнер для всех мест (один столбец)
+  // Создаём контейнер для всех мест (один вертикальный столбец)
   const allSpotsContainer = document.createElement("div");
   allSpotsContainer.className = "spots-vertical";
   
-  // Добавляем места в обратном порядке (1 снизу, 34 сверху)
+  // Добавляем места от 34 до 1 (34 сверху, 1 снизу)
   for (let num = 34; num >= 1; num--) {
     allSpotsContainer.appendChild(createSpot(num));
   }
