@@ -151,6 +151,44 @@ header h1 { font-size: 1.5rem; color: #1e293b; }
   border-radius: 4px;
   width: 90px;
 }
+/* Левые блоки - 4 отдельных блока */
+.left-blocks-container {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.left-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vertical-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  padding: 12px 8px;
+  border-radius: 12px;
+  color: #1e293b;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.spots-vertical {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  border: 2px solid #475569;
+  padding: 3px;
+  background: white;
+  border-radius: 4px;
+  width: 90px;
+}
 
 /* === МЕСТО === */
 .spot {

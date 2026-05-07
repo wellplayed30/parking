@@ -25,13 +25,18 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // === КОНФИГ ПАРКОВКИ ===
-const LEFT_SPOTS = Array.from({length: 34}, (_, i) => i + 1);
 const ELECTRIC_SPOTS = [59, 65];
-// Инвалидные места: 61,62,63,71,72,73,74,75
 const DISABLED_SPOTS = [61, 62, 63, 71, 72, 73, 74, 75];
 
-// Группы для верхнего ряда:
-// 36-41, 42-60, 61-63, 64-70, 71, 72-82, 83-91
+// Группы для левого ряда (1-34) - по 9 мест, кроме последней
+const LEFT_GROUPS = [
+  { start: 1, end: 9, label: "Парковка гостиничного оператора" },
+  { start: 10, end: 18, label: "Парковка гостиничного оператора" },
+  { start: 19, end: 27, label: "Парковка гостиничного оператора" },
+  { start: 28, end: 34, label: "Парковка гостиничного оператора" }
+];
+
+// Группы для верхнего ряда
 const TOP_GROUPS = [
   { start: 36, end: 41, label: "Парковка гостиничного оператора" },
   { start: 42, end: 60, label: "Парковка собственников апартаментов" },
@@ -103,14 +108,14 @@ onAuthStateChanged(auth, async (user) => {
 // === ОТРИСОВКА ===
 function renderParking() {
   renderTopRow();
-  renderLeftColumn();
+  renderLeftBlocks();
 }
 
 function renderTopRow() {
   const container = document.getElementById("top-row-container");
   container.innerHTML = "";
 
-  TOP_GROUPS.forEach((group, index) => {
+  TOP_GROUPS.forEach((group) => {
     const groupDiv = document.createElement("div");
     groupDiv.className = "top-group";
 
@@ -130,10 +135,31 @@ function renderTopRow() {
   });
 }
 
-function renderLeftColumn() {
-  const leftEl = document.getElementById("left-spots");
-  leftEl.innerHTML = "";
-  LEFT_SPOTS.forEach(num => leftEl.appendChild(createSpot(num)));
+function renderLeftBlocks() {
+  const container = document.getElementById("left-blocks-container");
+  container.innerHTML = "";
+
+  LEFT_GROUPS.forEach((group) => {
+    const blockDiv = document.createElement("div");
+    blockDiv.className = "left-block";
+
+    // Вертикальная подпись
+    const labelDiv = document.createElement("div");
+    labelDiv.className = "vertical-label";
+    labelDiv.textContent = group.label;
+    blockDiv.appendChild(labelDiv);
+
+    // Контейнер с местами
+    const spotsContainer = document.createElement("div");
+    spotsContainer.className = "spots-vertical";
+    // Места в обратном порядке (сверху вниз: место с end сверху)
+    for (let num = group.end; num >= group.start; num--) {
+      spotsContainer.appendChild(createSpot(num));
+    }
+    blockDiv.appendChild(spotsContainer);
+
+    container.appendChild(blockDiv);
+  });
 }
 
 function createSpot(num) {
@@ -148,7 +174,6 @@ function createSpot(num) {
     div.classList.add("disabled");
     div.innerHTML = `<span class="spot-icon">♿</span><span class="spot-num">${num}</span>`;
   } else if (num >= 83 && num <= 91) {
-    // Специальный стиль для мест управляющей компании
     div.classList.add("management");
     div.innerHTML = `<span class="spot-num">${num}</span>`;
   } else {
@@ -161,13 +186,12 @@ function createSpot(num) {
 // === ОБНОВЛЕНИЕ СТАТУСОВ ===
 function updateSpotStatuses() {
   document.querySelectorAll(".spot").forEach(el => {
-    const num = el.dataset.num;
+    const num = parseInt(el.dataset.num);
     const data = parkingData[num];
 
     el.classList.remove("busy", "expired", "management-busy", "management-expired");
     el.removeAttribute("data-guest");
 
-    // Для мест управляющей компании используем отдельные классы занятости
     const isManagement = (num >= 83 && num <= 91);
     
     if (data && (data.apart || data.plate)) {
